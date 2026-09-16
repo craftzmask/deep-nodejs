@@ -1,6 +1,7 @@
 const fs = require("fs/promises");
 
 const CREATE_FILE = "create a file";
+const DELETE_FILE = "delete the file";
 
 (async () => {
   const createFile = async (path) => {
@@ -13,6 +14,23 @@ const CREATE_FILE = "create a file";
       newFileHandle.close();
       console.log("A new file created:", path);
     }
+  };
+
+  const deleteFile = async (path) => {
+    try {
+      await fs.unlink(path);
+      console.log("Deleted the file succesfully");
+    } catch (error) {
+      if (error.code === "ENOENT") {
+        console.log(`The file does not exist to remove: ${path}`);
+      } else {
+        console.log(
+          `There is ab error occured while removing the file: ${error}`,
+        );
+      }
+    }
+
+    console.log(`Delete file: ${path}`);
   };
 
   const commandFileHandler = await fs.open("./command.txt", "r");
@@ -31,12 +49,15 @@ const CREATE_FILE = "create a file";
 
     // create a file <path>
     if (content.includes(CREATE_FILE)) {
-      const path = content.substring(CREATE_FILE.length + 1);
-      createFile(path);
+      const filePath = content.substring(CREATE_FILE.length + 1);
+      createFile(filePath);
+    } else if (content.includes(DELETE_FILE)) {
+      const filePath = content.substring(DELETE_FILE.length + 1);
+      deleteFile(filePath);
     }
   });
 
-  const watcher = await fs.watch("./command.txt");
+  const watcher = fs.watch("./command.txt");
 
   for await (const event of watcher) {
     if (event.eventType === "change") {
