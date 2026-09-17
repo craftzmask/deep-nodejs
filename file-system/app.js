@@ -2,6 +2,7 @@ const fs = require("fs/promises");
 
 const CREATE_FILE = "create a file";
 const DELETE_FILE = "delete the file";
+const RENAME_FILE = "rename the file";
 
 (async () => {
   const createFile = async (path) => {
@@ -29,8 +30,32 @@ const DELETE_FILE = "delete the file";
         );
       }
     }
+  };
 
-    console.log(`Delete file: ${path}`);
+  const renameFile = async (oldPath, newPath) => {
+    console.log("Current directory:", process.cwd());
+    console.log(
+      "Source exists:",
+      await fs.stat(oldPath).then(
+        () => true,
+        () => false,
+      ),
+    );
+    console.log(`${oldPath} === ${newPath}`);
+    try {
+      await fs.rename(oldPath, newPath);
+      console.log("Renamed the file succesfully");
+    } catch (error) {
+      if (error.code === "ENOENT") {
+        console.log(
+          "No file at this path to rename or the destination doesn't exist",
+        );
+      } else {
+        console.log(
+          `There is ab error occured while removing the file: ${error}`,
+        );
+      }
+    }
   };
 
   const commandFileHandler = await fs.open("./command.txt", "r");
@@ -54,11 +79,15 @@ const DELETE_FILE = "delete the file";
     } else if (content.includes(DELETE_FILE)) {
       const filePath = content.substring(DELETE_FILE.length + 1);
       deleteFile(filePath);
+    } else if (content.includes(RENAME_FILE)) {
+      const idx = content.indexOf(" to ");
+      const oldPath = content.substring(RENAME_FILE.length + 1, idx);
+      const newPath = content.substring(idx + 4);
+      renameFile(oldPath, newPath);
     }
   });
 
   const watcher = fs.watch("./command.txt");
-
   for await (const event of watcher) {
     if (event.eventType === "change") {
       commandFileHandler.emit("change");
